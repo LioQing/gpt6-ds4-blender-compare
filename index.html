@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A comparative evaluation of GPT-6 Astra in Codex and Deepseek V4.1 Flash in OpenCode on an image-to-Blender robot modeling workflow.">
+  <title>One robot, two agent stacks · Comparative report</title>
+  <script>
+    (() => {
+      const stored = localStorage.getItem('robot-report-theme');
+      const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: {
+      sans: ['Inter','ui-sans-serif','system-ui','-apple-system','BlinkMacSystemFont','Segoe UI','sans-serif'],
+      mono: ['SFMono-Regular','Cascadia Code','Roboto Mono','ui-monospace','monospace']
+    }}}};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=add,check_circle,close,contrast,data_object,info,open_in_new,print,warning&display=block">
+  <style>
+    :root { --page:#fff; --ink:#18181b; --muted:#71717a; --soft:#f4f4f5; --rule:#e4e4e7; --blue:#2563eb; --amber:#b45309; --green:#047857; --chart-grid:#e4e4e7; }
+    .dark { --page:#09090b; --ink:#f4f4f5; --muted:#a1a1aa; --soft:#18181b; --rule:#27272a; --blue:#60a5fa; --amber:#fbbf24; --green:#34d399; --chart-grid:#27272a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page); color:var(--ink); text-rendering:optimizeLegibility; }
+    section { scroll-margin-top:2rem; }
+    .tabular { font-variant-numeric:tabular-nums; }
+    .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20; }
+    .section-link { border-left:1px solid var(--rule); color:var(--muted); transition:color 150ms ease-out,border-color 150ms ease-out; }
+    .section-link:hover,.section-link.active { color:var(--ink); }
+    .section-link.active { border-left-color:var(--blue); font-weight:600; }
+    .control { transition:color 150ms ease-out,background-color 150ms ease-out,border-color 150ms ease-out,transform 120ms ease-out; }
+    .control:active { transform:scale(.97); }
+    .bar-track { height:.5rem; overflow:hidden; border-radius:999px; background:var(--soft); }
+    .bar-fill { height:100%; border-radius:inherit; }
+    .img-grid img { width:100%; height:100%; object-fit:contain; background:#111; }
+    .modal { border:0; padding:0; width:min(94vw,1100px); max-width:none; background:transparent; color:inherit; }
+    .modal::backdrop { background:rgb(0 0 0 / .82); }
+    .modal img { max-width:100%; max-height:82vh; object-fit:contain; margin:auto; }
+    details .disclosure-icon { transition:transform 180ms ease-out; }
+    details[open] .disclosure-icon { transform:rotate(45deg); }
+    summary::-webkit-details-marker { display:none; }
+    body.theme-transition,body.theme-transition * { transition-property:color,background-color,border-color; transition-duration:180ms; transition-timing-function:ease-out; }
+    .skeleton { background:linear-gradient(90deg,var(--soft),var(--rule),var(--soft)); background-size:200% 100%; animation:shimmer 1.2s infinite; }
+    @keyframes shimmer { to { background-position:-200% 0; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+    @media print {
+      html { color-scheme:light!important; }
+      body { background:#fff!important; color:#000!important; }
+      .no-print { display:none!important; }
+      .print-full { max-width:none!important; padding:0!important; display:block!important; }
+      section,figure,table,.avoid-break { break-inside:avoid; }
+      details > * { display:block!important; }
+      a { color:inherit!important; text-decoration:none!important; }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-blue-200 dark:selection:bg-blue-900">
+  <div class="fixed right-4 top-4 z-40 flex gap-2 no-print">
+    <button id="theme-toggle" class="control inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-3 text-xs font-medium shadow-sm backdrop-blur hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950/95 dark:hover:bg-zinc-900" aria-label="Switch color theme">
+      <span class="material-symbols-outlined text-[17px]" aria-hidden="true">contrast</span><span class="hidden sm:inline">Theme</span>
+    </button>
+    <button onclick="window.print()" class="control inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-3 text-xs font-medium shadow-sm backdrop-blur hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950/95 dark:hover:bg-zinc-900">
+      <span class="material-symbols-outlined text-[17px]" aria-hidden="true">print</span><span class="hidden sm:inline">Print</span>
+    </button>
+  </div>
+
+  <div class="print-full mx-auto grid max-w-[1220px] grid-cols-1 gap-14 px-6 pb-24 pt-20 lg:grid-cols-[minmax(0,860px)_210px] lg:px-10 lg:pt-24">
+    <main id="report" class="min-w-0">
+      <div id="loading" class="space-y-5" aria-live="polite">
+        <div class="skeleton h-3 w-40 rounded"></div><div class="skeleton h-12 max-w-2xl rounded"></div><div class="skeleton h-5 max-w-xl rounded"></div><div class="skeleton mt-8 h-28 rounded"></div>
+        <p class="pt-2 text-sm text-zinc-500">Loading <code>data.json</code>…</p>
+      </div>
+      <div id="error" hidden class="rounded-xl border border-amber-300 p-5 text-sm leading-6 text-amber-800 dark:border-amber-900 dark:text-amber-300" role="alert">
+        <strong>Data could not be loaded.</strong> Serve this folder over HTTP (for example, <code class="font-mono">python -m http.server</code>) rather than opening the HTML directly, then refresh.
+      </div>
+      <div id="content" hidden></div>
+    </main>
+    <aside class="no-print hidden lg:block" aria-label="On this page">
+      <nav class="sticky top-24 text-sm">
+        <p class="mb-4 text-xs font-semibold uppercase tracking-[.14em] text-zinc-500 dark:text-zinc-400">On this page</p>
+        <div id="section-nav" class="flex flex-col"></div>
+      </nav>
+    </aside>
+  </div>
+
+  <dialog id="image-modal" class="modal">
+    <div class="relative rounded-xl bg-black p-3 shadow-2xl">
+      <button id="modal-close" class="control absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Close image">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <img id="modal-image" alt="">
+      <p id="modal-caption" class="px-2 pb-1 pt-3 text-center text-sm text-zinc-300"></p>
+    </div>
+  </dialog>
+
+  <script>
+    const fmt = new Intl.NumberFormat('en-US');
+    const usd = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(v);
+    const tokenFmt = v => new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(v / 1000) + 'k';
+    const esc = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+    const icon = name => `<span class="material-symbols-outlined mt-0.5 shrink-0 text-[20px]" aria-hidden="true">${name}</span>`;
+    let charts = [];
+
+    function callout(kind, html) {
+      const spec = kind === 'success' ? ['check_circle','border-emerald-300 text-emerald-800 dark:border-emerald-900 dark:text-emerald-300'] : kind === 'warning' ? ['warning','border-amber-300 text-amber-800 dark:border-amber-900 dark:text-amber-300'] : ['info','border-zinc-300 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300'];
+      return `<div class="mt-7 flex items-start gap-4 rounded-xl border ${spec[1]} px-5 py-4 text-sm leading-6">${icon(spec[0])}<p>${html}</p></div>`;
+    }
+
+    function sectionHead(number,kicker,title,description='') {
+      return `<div class="border-t border-zinc-200 pt-8 dark:border-zinc-800"><p class="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-zinc-700 dark:text-zinc-400">${number} · ${kicker}</p><h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">${title}</h2>${description ? `<p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">${description}</p>` : ''}</div>`;
+    }
+
+    function disclosure(title, body, open=false) {
+      return `<details ${open?'open':''} class="group min-w-0 max-w-full rounded-lg border border-zinc-300 bg-transparent open:border-zinc-400 dark:border-zinc-700 dark:open:border-zinc-600"><summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 rounded-lg px-5 py-4 text-sm font-medium outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500 dark:hover:bg-zinc-900/60"><span>${title}</span><span class="material-symbols-outlined disclosure-icon text-[20px] text-zinc-400">add</span></summary><div class="min-w-0 max-w-full px-5 pb-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">${body}</div></details>`;
+    }
+
+    function render(data) {
+      const [codex,open] = data.runs;
+      const durationRatio = open.totals.durationSeconds / codex.totals.durationSeconds;
+      const timeSaved = (1 - codex.totals.durationSeconds / open.totals.durationSeconds) * 100;
+      const tokenSaved = (1 - codex.totals.tokenContext.used / open.totals.tokenContext.used) * 100;
+      const lowCodexCost = codex.costEstimatesUsd.find(x=>x.method==='prorated-subscription').amount;
+      const highCodexCost = codex.costEstimatesUsd.find(x=>x.method==='token-credit-equivalent').amount;
+      const openCost = open.costEstimatesUsd[0].amount;
+      const nav = [
+        ['verdict','Executive readout'],['outputs','Visual outputs'],['speed','Speed by task'],['efficiency','Tokens & context'],['cost','Cost-effectiveness'],['workflow','Prompt trace'],['setup','Harness setup'],['evidence','All evidence'],['method','Method & limits']
+      ];
+      document.getElementById('section-nav').innerHTML = nav.map((x,i)=>`<a class="section-link px-4 py-2 ${i===0?'active':''}" href="#${x[0]}">${x[1]}</a>`).join('');
+
+      const mobileNav = `<details class="mb-12 rounded-lg border border-zinc-200 lg:hidden dark:border-zinc-800 no-print"><summary class="flex min-h-12 cursor-pointer list-none items-center justify-between rounded-lg px-4 py-3 text-sm font-medium outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:hover:bg-zinc-900/60"><span>On this page</span><span class="material-symbols-outlined disclosure-icon text-[20px] text-zinc-400">add</span></summary><nav class="grid gap-2 px-4 pb-4 pt-1 text-sm text-zinc-600 dark:text-zinc-400" aria-label="Mobile table of contents">${nav.map(x=>`<a href="#${x[0]}">${x[1]}</a>`).join('')}</nav></details>`;
+
+      const runCards = data.runs.map((r,i)=>{
+        const cost = r.costEstimatesUsd.map(c=>`${usd(c.amount)} · ${c.method.replaceAll('-',' ')}`).join('<br>');
+        return `<article class="border-t-2 ${i===0?'border-blue-600':'border-amber-500'} pt-5"><p class="text-xs font-semibold uppercase tracking-[.13em] ${i===0?'text-blue-700 dark:text-blue-400':'text-amber-700 dark:text-amber-400'}">${esc(r.platform)} stack</p><h3 class="mt-2 text-lg font-semibold">${esc(r.model)}</h3><dl class="mt-5 grid grid-cols-2 gap-x-5 gap-y-4 text-sm"><div><dt class="text-xs text-zinc-500">Elapsed</dt><dd class="tabular mt-1 font-semibold">${esc(r.totals.durationDisplay)}</dd></div><div><dt class="text-xs text-zinc-500">Context used</dt><dd class="tabular mt-1 font-semibold">${tokenFmt(r.totals.tokenContext.used)}</dd></div><div><dt class="text-xs text-zinc-500">Cost estimate${r.costEstimatesUsd.length>1?'s':''}</dt><dd class="tabular mt-1 leading-6">${cost}</dd></div><div><dt class="text-xs text-zinc-500">Model effort</dt><dd class="mt-1 font-semibold">${esc(r.effort)}</dd></div></dl></article>`;
+      }).join('');
+
+      const promptRows = data.prompts.map(p=>{
+        const c = codex.promptResults.find(x=>x.promptId===p.id), o = open.promptResults.find(x=>x.promptId===p.id);
+        return `<tr><th scope="row" class="px-3 py-4 text-left"><span class="block font-medium">${p.id}. ${esc(p.task.replaceAll('-',' '))}</span><span class="mt-1 block text-xs font-normal text-zinc-500">${esc(p.text)}</span></th><td class="tabular px-3 py-4 text-right align-top">${esc(c.durationDisplay)}</td><td class="tabular px-3 py-4 text-right align-top">${esc(o.durationDisplay)}</td><td class="tabular px-3 py-4 text-right align-top">${(o.durationSeconds/c.durationSeconds).toFixed(1)}×</td></tr>`;
+      }).join('');
+
+      const resultFigures = data.runs.map((r,i)=>`<figure><button class="image-open group block w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-800" data-src="${esc(r.results.renderImage)}" data-caption="${esc(r.model)} · final render"><div class="aspect-square"><img src="${esc(r.results.renderImage)}" alt="Final rendered robot created by ${esc(r.model)}" class="transition duration-200 group-hover:scale-[1.015]" loading="eager"></div></button><figcaption class="mt-3"><strong class="text-sm">${esc(r.model)}</strong><span class="mt-1 block text-xs text-zinc-500">Final rendered output · select to enlarge</span></figcaption></figure>`).join('');
+      const rigFigures = data.runs.map(r=>`<figure><button class="image-open group block aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-800" data-src="${esc(r.results.rigImage)}" data-caption="${esc(r.model)} · rig view"><img src="${esc(r.results.rigImage)}" alt="Robot skeleton and rig created by ${esc(r.model)}" class="h-full w-full object-contain transition duration-200 group-hover:scale-[1.015]" loading="lazy"></button><figcaption class="mt-2 text-xs text-zinc-500">${esc(r.model)} · rig evidence</figcaption></figure>`).join('');
+
+      const setupLinks = data.commonSetup.mcps.map(m=>`<li class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 py-3 last:border-0 dark:border-zinc-800"><span class="font-mono text-xs">${esc(m.name)}</span><a class="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline dark:text-blue-400" href="${esc(m.url)}" target="_blank" rel="noreferrer">Repository <span class="material-symbols-outlined text-[14px]">open_in_new</span></a></li>`).join('');
+      const runSetup = data.runs.map(r=>`<div><h3 class="font-semibold">${esc(r.model)}</h3><dl class="mt-4 grid gap-3 text-sm"><div><dt class="text-xs text-zinc-500">Run name</dt><dd>${esc(r.name)}</dd></div><div><dt class="text-xs text-zinc-500">Platform / client</dt><dd>${esc(r.platform)} / ${esc(r.interactionClient)}</dd></div><div><dt class="text-xs text-zinc-500">Billing</dt><dd>${esc(r.billingMethod)}</dd></div>${r.routing?`<div><dt class="text-xs text-zinc-500">Routing</dt><dd>${esc(r.routing)}</dd></div>`:''}<div><dt class="text-xs text-zinc-500">Effort</dt><dd>${esc(r.effort)}</dd></div></dl></div>`).join('');
+
+      const tokenRows = data.prompts.map(p=>{
+        const c=codex.promptResults.find(x=>x.promptId===p.id),o=open.promptResults.find(x=>x.promptId===p.id);
+        return `<tr><th class="px-3 py-3 text-left font-medium" scope="row">P${p.id} · ${esc(p.task.replaceAll('-',' '))}</th><td class="tabular px-3 py-3 text-right">${tokenFmt(c.approximateTokens.input)}</td><td class="tabular px-3 py-3 text-right">${tokenFmt(c.approximateTokens.output)}</td><td class="tabular px-3 py-3 text-right">${tokenFmt(o.approximateTokens.input)}</td><td class="tabular px-3 py-3 text-right">${tokenFmt(o.approximateTokens.output)}</td></tr>`;
+      }).join('');
+
+      const triangleRows = data.runs.map(r=>{ const t=r.promptResults.find(x=>x.triangles).triangles; return `<tr><th class="px-3 py-3 text-left font-medium" scope="row">${esc(r.model)}</th><td class="tabular px-3 py-3 text-right">${fmt.format(t.before)}</td><td class="tabular px-3 py-3 text-right">${fmt.format(t.after)}</td><td class="tabular px-3 py-3 text-right">−${fmt.format(t.reduction)} (${t.reductionPercent}%)</td></tr>`; }).join('');
+
+      document.getElementById('content').innerHTML = `
+        <header class="mb-16 border-b border-zinc-200 pb-12 dark:border-zinc-800">
+          <div class="mb-6 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-[.16em] text-zinc-500 dark:text-zinc-400"><span>Agent benchmark</span><span aria-hidden="true">·</span><time datetime="2026-09-19">19 Sep 2026</time><span class="rounded-full border border-zinc-300 px-2 py-1 normal-case tracking-normal dark:border-zinc-700">4-step Blender workflow</span></div>
+          <h1 class="max-w-4xl text-4xl font-semibold tracking-[-.035em] sm:text-5xl">One robot, two agent stacks</h1>
+          <p class="mt-5 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">GPT-6 Astra in Codex delivered the closer visual match in roughly one quarter of the time and with less context usage. Deepseek V4.1 Flash in OpenCode was cheaper by the supplied cost estimates, while still producing an acceptable result.</p>
+          <dl class="mt-10 grid grid-cols-2 border-y border-zinc-200 sm:grid-cols-4 dark:border-zinc-800">
+            <div class="border-b border-r border-zinc-200 py-5 pr-4 sm:border-b-0 dark:border-zinc-800"><dt class="text-xs text-zinc-500">Speed advantage</dt><dd class="tabular mt-2 text-2xl font-semibold">${durationRatio.toFixed(1)}×</dd><p class="mt-1 text-xs text-blue-700 dark:text-blue-400">Codex faster</p></div>
+            <div class="border-b border-zinc-200 py-5 pl-4 sm:border-b-0 sm:border-r sm:pr-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500">Time saved</dt><dd class="tabular mt-2 text-2xl font-semibold">${timeSaved.toFixed(0)}%</dd><p class="mt-1 text-xs text-zinc-500">30m 33s shorter in Codex</p></div>
+            <div class="border-r border-zinc-200 py-5 pr-4 sm:pl-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500">Lowest est. cost</dt><dd class="tabular mt-2 text-2xl font-semibold">${usd(openCost)}</dd><p class="mt-1 text-xs text-amber-700 dark:text-amber-400">OpenCode API run</p></div>
+            <div class="py-5 pl-4"><dt class="text-xs text-zinc-500">Context delta</dt><dd class="tabular mt-2 text-2xl font-semibold">${tokenSaved.toFixed(0)}%</dd><p class="mt-1 text-xs text-zinc-500">less in Codex</p></div>
+          </dl>
+        </header>
+        ${mobileNav}
+
+        <section id="verdict" class="mb-20" aria-labelledby="verdict-title">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-zinc-700 dark:text-zinc-400">01 · Readout</p><h2 id="verdict-title" class="text-2xl font-semibold tracking-tight sm:text-3xl">Executive readout</h2>
+          <div class="mt-7 grid gap-8 sm:grid-cols-2">${runCards}</div>
+          <div class="mt-9 grid gap-7 text-[15px] leading-7 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300"><p><strong class="text-zinc-950 dark:text-white">Codex wins on observed capability and throughput.</strong> Its output is recorded as a closer match to the reference, and the full sequence completed 3.7× faster with 48k fewer context tokens used.</p><p><strong class="text-zinc-950 dark:text-white">OpenCode wins on direct measured spend.</strong> The reported API charge was $0.16. Codex is estimated at $0.28 under subscription proration or $1.06 as a token-credit equivalent, so the cost conclusion depends on the accounting lens.</p></div>
+          ${callout('info','<strong class="text-zinc-950 dark:text-white">Decision frame:</strong> choose the Codex stack when iteration speed and reference fidelity dominate; choose the OpenCode stack when minimizing marginal cash cost matters more than elapsed time. This is a single-task result, not a general model ranking.')}
+        </section>
+
+        <section id="outputs" class="mb-20" aria-labelledby="outputs-title">
+          ${sectionHead('02','Output quality','The result that matters is visible','The source data contains qualitative judgments rather than numeric quality scores. The images are therefore shown directly so the result can be inspected without false precision.')}
+          <figure class="mx-auto mt-8 max-w-[640px]"><div class="aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-950 dark:border-zinc-800"><img src="${esc(data.prompts[0].attachments[0])}" alt="Reference concept art of a small cartoon robot" class="h-full w-full object-contain"></div><figcaption class="mt-3 text-xs text-zinc-500">Reference concept supplied to both runs.</figcaption></figure>
+          <div class="img-grid mt-7 grid gap-6 sm:grid-cols-2">${resultFigures}</div>
+          ${callout('success','<strong class="text-zinc-950 dark:text-white">Recorded assessment:</strong> GPT-6 Astra “matches closely to the reference image.” Deepseek V4.1 Flash has “more differences,” though its quality is still described as acceptable.')}
+          <h3 class="mt-10 text-lg font-semibold">Rig evidence</h3><div class="img-grid mt-4 grid gap-6 sm:grid-cols-2">${rigFigures}</div>
+        </section>
+
+        <section id="speed" class="mb-20" aria-labelledby="speed-title">
+          ${sectionHead('03','Elapsed time','The lead was built in the first task','Modeling and texturing accounts for most of the 30m 33s overall gap. Codex was faster on every prompt.')}
+          <figure class="mt-8"><div class="h-[340px] border-y border-zinc-200 py-5 dark:border-zinc-800"><canvas id="duration-chart" role="img" aria-label="Grouped bar chart of elapsed seconds for each prompt and model"></canvas><p class="chart-fallback hidden text-sm text-zinc-500">Chart unavailable; exact durations remain in the table below.</p></div><figcaption class="mt-3 text-xs text-zinc-500">Elapsed seconds by workflow prompt. Lower is better.</figcaption></figure>
+          <div class="mt-6 overflow-x-auto border-y border-zinc-200 dark:border-zinc-800"><table class="w-full min-w-[680px] text-sm"><caption class="sr-only">Prompt duration comparison</caption><thead class="text-xs text-zinc-500"><tr><th class="px-3 py-3 text-left font-medium">Prompt</th><th class="min-w-[80px] px-3 py-3 text-right font-medium">GPT-6 Astra</th><th class="min-w-[80px] px-3 py-3 text-right font-medium">Deepseek V4.1</th><th class="min-w-[80px] px-3 py-3 text-right font-medium">Codex speed-up</th></tr></thead><tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">${promptRows}</tbody></table></div>
+          ${callout('info',`Prompt 1 took ${codex.promptResults[0].durationDisplay} in Codex versus ${open.promptResults[0].durationDisplay} in OpenCode—a ${(open.promptResults[0].durationSeconds/codex.promptResults[0].durationSeconds).toFixed(1)}× difference. Later steps converged, with rigging only ${(open.promptResults[3].durationSeconds/codex.promptResults[3].durationSeconds).toFixed(1)}× apart.`)}
+        </section>
+
+        <section id="efficiency" class="mb-20" aria-labelledby="efficiency-title">
+          ${sectionHead('04','Resource use','Less context used, but utilization tells another story','Absolute context usage and percentage of available context answer different questions because the two limits differ by more than 4×.')}
+          <div class="mt-8 grid gap-6 sm:grid-cols-2">${data.runs.map((r,i)=>{const pct=r.totals.tokenContext.used/r.totals.tokenContext.limit*100;return `<div class="rounded-lg border border-zinc-200 p-5 dark:border-zinc-800"><div class="flex items-baseline justify-between gap-4"><h3 class="font-semibold">${esc(r.model)}</h3><span class="tabular text-sm">${tokenFmt(r.totals.tokenContext.used)} / ${tokenFmt(r.totals.tokenContext.limit)}</span></div><div class="bar-track mt-4"><div class="bar-fill ${i===0?'bg-blue-600':'bg-amber-500'}" style="width:${pct}%"></div></div><p class="mt-2 text-xs text-zinc-500">${pct.toFixed(1)}% of context limit</p></div>`}).join('')}</div>
+          <figure class="mt-8"><div class="h-[360px] border-y border-zinc-200 py-5 dark:border-zinc-800"><canvas id="token-chart" role="img" aria-label="Grouped bar chart of approximate input and output token readings by prompt"></canvas><p class="chart-fallback hidden text-sm text-zinc-500">Chart unavailable; exact token readings remain in the table below.</p></div><figcaption class="mt-3 text-xs leading-5 text-zinc-500">Approximate token readings as recorded for each prompt.</figcaption></figure>
+          <div class="mt-6 overflow-x-auto border-y border-zinc-200 dark:border-zinc-800"><table class="w-full min-w-[760px] text-sm"><caption class="sr-only">Approximate input and output token readings by prompt</caption><thead class="text-xs text-zinc-500"><tr><th class="px-3 py-3 text-left font-medium">Prompt</th><th class="px-3 py-3 text-right font-medium">Astra input</th><th class="px-3 py-3 text-right font-medium">Astra output</th><th class="px-3 py-3 text-right font-medium">Deepseek input</th><th class="px-3 py-3 text-right font-medium">Deepseek output</th></tr></thead><tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">${tokenRows}</tbody></table></div>
+          <h3 class="mt-10 text-lg font-semibold">Game optimization result</h3><div class="mt-4 overflow-x-auto border-y border-zinc-200 dark:border-zinc-800"><table class="w-full min-w-[620px] text-sm"><caption class="sr-only">Triangle reduction comparison</caption><thead class="text-xs text-zinc-500"><tr><th class="px-3 py-3 text-left font-medium">Model</th><th class="px-3 py-3 text-right font-medium">Before</th><th class="px-3 py-3 text-right font-medium">After</th><th class="px-3 py-3 text-right font-medium">Reduction</th></tr></thead><tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">${triangleRows}</tbody></table></div>
+          ${callout('info','GPT-6 Astra removed a larger share of triangles (88.24% vs. 74.18%), while Deepseek finished with the lower absolute mesh count (5,464 vs. 9,724). Without visual or deformation QA on the optimized meshes, neither number alone establishes better game readiness.')}
+        </section>
+
+        <section id="cost" class="mb-20" aria-labelledby="cost-title">
+          ${sectionHead('05','Economics','Cheaper run, faster run—different winners','The OpenCode run has one reported API cost. Codex has two estimates based on different allocation methods; neither is a directly metered task charge.')}
+          <figure class="mt-8"><div class="h-[320px] border-y border-zinc-200 py-5 dark:border-zinc-800"><canvas id="cost-chart" role="img" aria-label="Bar chart comparing the three supplied cost estimates"></canvas><p class="chart-fallback hidden text-sm text-zinc-500">Chart unavailable; values are $0.16, $0.28, and $1.06.</p></div><figcaption class="mt-3 text-xs text-zinc-500">USD per observed run under each supplied accounting method. Lower is cheaper.</figcaption></figure>
+          <div class="mt-8 grid gap-5 sm:grid-cols-3"><div class="border-t border-amber-500 pt-4"><p class="text-xs text-zinc-500">OpenCode · reported API</p><p class="tabular mt-2 text-2xl font-semibold">${usd(openCost)}</p><p class="mt-2 text-xs leading-5 text-zinc-500">Directly reported cost for this run.</p></div><div class="border-t border-blue-600 pt-4"><p class="text-xs text-zinc-500">Codex · subscription proration</p><p class="tabular mt-2 text-2xl font-semibold">${usd(lowCodexCost)}</p><p class="mt-2 font-mono text-[11px] text-zinc-500">0.06 / 4.3 × 20</p></div><div class="border-t border-blue-600 pt-4"><p class="text-xs text-zinc-500">Codex · credit equivalent</p><p class="tabular mt-2 text-2xl font-semibold">${usd(highCodexCost)}</p><p class="mt-2 font-mono text-[11px] text-zinc-500">0.106 × 250 × 20 / 500</p></div></div>
+          ${callout('warning','<strong class="text-zinc-950 dark:text-white">Do not over-read the dollar comparison.</strong> Subscription proration allocates a recurring plan; credit equivalence applies a hypothetical conversion; only the OpenCode figure is labeled as reported API cost. The estimates exclude human waiting time and the value of output quality.')}
+        </section>
+
+        <section id="workflow" class="mb-20" aria-labelledby="workflow-title">
+          ${sectionHead('06','Task trace','The same four instructions shaped both runs','The experiment moves from initial creation through art direction, optimization, and rigging. The full prompt text and attachments are retained below.')}
+          <div class="mt-7 grid gap-3">${data.prompts.map((p,i)=>disclosure(`<span class="mr-3 text-zinc-400">0${p.id}</span>${esc(p.task.replaceAll('-',' '))}`,`<p class="text-zinc-800 dark:text-zinc-200">${esc(p.text)}</p><p class="mt-3 text-xs">Attachments: ${p.attachments.length?p.attachments.map(a=>`<code>${esc(a)}</code>`).join(', '):'None'}</p>`,i===0)).join('')}</div>
+        </section>
+
+        <section id="setup" class="mb-20" aria-labelledby="setup-title">
+          ${sectionHead('07','Experimental setup','Shared tools, different harnesses and models','Both stacks used the same MCP server list and no declared skills. The harness, interaction client, billing model, model, and context limits differed.')}
+          <div class="mt-8 grid gap-8 sm:grid-cols-2">${runSetup}</div>
+          <div class="mt-9 rounded-lg border border-zinc-200 px-5 py-2 dark:border-zinc-800"><h3 class="pt-3 text-sm font-semibold">Common MCP servers</h3><ul class="mt-2">${setupLinks}</ul></div>
+          <p class="mt-4 text-sm text-zinc-600 dark:text-zinc-400"><strong class="text-zinc-950 dark:text-white">Skills:</strong> ${data.commonSetup.skills.length?data.commonSetup.skills.map(esc).join(', '):'None declared.'}</p>
+        </section>
+
+        <section id="evidence" class="mb-20" aria-labelledby="evidence-title">
+          ${sectionHead('08','Evidence ledger','Every recorded field remains available','Notes, cost assumptions, per-prompt measurements, and raw source data are preserved for auditability.')}
+          <div class="mt-7 grid min-w-0 gap-3">${data.runs.map(r=>disclosure(`${esc(r.model)} · notes & cost assumptions`,`<h4 class="font-semibold text-zinc-900 dark:text-zinc-100">Notes</h4><ul class="mt-2 list-disc space-y-1 pl-5">${r.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><h4 class="mt-5 font-semibold text-zinc-900 dark:text-zinc-100">Cost records</h4><div class="mt-2 space-y-3">${r.costEstimatesUsd.map(c=>`<div><p><strong>${esc(c.method)}</strong>: ${usd(c.amount)}</p>${c.formula?`<p class="font-mono text-xs">Formula: ${esc(c.formula)}</p>`:''}${c.assumptions?`<p class="text-xs">Assumptions: ${Object.entries(c.assumptions).map(([k,v])=>`${esc(k)} = ${esc(v)}`).join('; ')}</p>`:''}</div>`).join('')}</div>${r.totals.weeklyLimitUsedPercent!==undefined?`<p class="mt-5">Weekly limit used: <strong>${r.totals.weeklyLimitUsedPercent}%</strong></p>`:''}`)).join('')}${disclosure('Raw data.json',`<div class="mb-3 flex justify-end no-print"><button id="copy-json" class="control rounded-md border border-zinc-300 px-3 py-1.5 text-xs hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-700 dark:hover:bg-zinc-900">Copy JSON</button></div><pre class="max-h-[520px] w-full max-w-full overflow-x-auto overflow-y-auto rounded-lg bg-zinc-950 p-4 text-xs leading-5 text-zinc-200"><code id="raw-json">${esc(JSON.stringify(data,null,2))}</code></pre>`)}</div>
+        </section>
+
+        <section id="method" class="mb-16" aria-labelledby="method-title">
+          ${sectionHead('09','Method & limits','What this experiment can—and cannot—show')}
+          <div class="mt-7 grid gap-3">${disclosure('Comparison contract','Same four user prompts, same listed MCP servers, same reference image, and one completed artifact sequence per stack. Metrics are taken directly from the supplied dataset.',true)}${disclosure('Quality measurement','Quality is not independently scored. The report repeats the supplied run notes and exposes the reference, renders, and rig views for human inspection. No composite winner score is calculated.')}${disclosure('Cost comparability','OpenCode reports an API cost; Codex uses two estimated allocation methods. Infrastructure, Blender compute, review labor, retries outside the recorded run, and subscription value from other tasks are not captured.')}${disclosure('Generalizability','One asset, one prompt sequence, and one run per stack cannot characterize variance or establish general superiority. A stronger follow-up would use several assets, blinded raters, repeat runs, a fixed quality rubric, and fully metered costs.')}</div>
+        </section>
+        <footer class="border-t border-zinc-200 pt-6 text-xs leading-5 text-zinc-500 dark:border-zinc-800">Generated from <code>data.json</code>. All quantitative claims are computed from or reproduced from that source; qualitative judgments are attributed to its notes.</footer>`;
+
+      initInteractions(data);
+    }
+
+    function initInteractions(data) {
+      const root=document.documentElement;
+      const colors=()=>({text:root.classList.contains('dark')?'#a1a1aa':'#52525b',grid:root.classList.contains('dark')?'#27272a':'#e4e4e7'});
+      const baseOptions=(unit='')=>({responsive:true,maintainAspectRatio:false,color:colors().text,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:20}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt.format(c.parsed.y)}${unit}`}}},scales:{x:{grid:{display:false},ticks:{color:colors().text}},y:{beginAtZero:true,grid:{color:colors().grid},ticks:{color:colors().text,callback:v=>`${fmt.format(v)}${unit}`}}}});
+      if(window.Chart){
+        const [a,d]=data.runs;
+        charts.push(new Chart(document.getElementById('duration-chart'),{type:'bar',data:{labels:data.prompts.map(p=>`P${p.id} · ${p.task.replaceAll('-',' ')}`),datasets:[{label:a.model,data:a.promptResults.map(x=>x.durationSeconds),backgroundColor:'#2563eb',borderRadius:3},{label:d.model,data:d.promptResults.map(x=>x.durationSeconds),backgroundColor:'#d97706',borderRadius:3}]},options:baseOptions(' s')}));
+        const tokenOptions=baseOptions(''); tokenOptions.scales.y.ticks.callback=v=>tokenFmt(v); tokenOptions.plugins.tooltip.callbacks.label=c=>`${c.dataset.label}: ${tokenFmt(c.parsed.y)}`;
+        charts.push(new Chart(document.getElementById('token-chart'),{type:'bar',data:{labels:data.prompts.flatMap(p=>[`P${p.id} input`,`P${p.id} output`]),datasets:[{label:a.model,data:a.promptResults.flatMap(x=>[x.approximateTokens.input,x.approximateTokens.output]),backgroundColor:'#2563eb',borderRadius:3},{label:d.model,data:d.promptResults.flatMap(x=>[x.approximateTokens.input,x.approximateTokens.output]),backgroundColor:'#d97706',borderRadius:3}]},options:tokenOptions}));
+        const costOptions=baseOptions(''); costOptions.plugins.legend.display=false; costOptions.scales.y.ticks.callback=v=>`$${v.toFixed(2)}`; costOptions.plugins.tooltip.callbacks.label=c=>usd(c.parsed.y);
+        charts.push(new Chart(document.getElementById('cost-chart'),{type:'bar',data:{labels:['OpenCode · reported API','Codex · subscription proration','Codex · token-credit equivalent'],datasets:[{data:[.16,.28,1.06],backgroundColor:['#d97706','#2563eb','#2563eb'],borderRadius:3}]},options:costOptions}));
+      } else document.querySelectorAll('.chart-fallback').forEach(x=>x.classList.remove('hidden'));
+
+      const navLinks=[...document.querySelectorAll('#section-nav a')];
+      const observer=new IntersectionObserver(entries=>{const active=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];if(!active)return;navLinks.forEach(l=>{const on=l.hash===`#${active.target.id}`;l.classList.toggle('active',on);l.setAttribute('aria-current',on?'location':'false');});},{rootMargin:'-15% 0px -68% 0px',threshold:[0,.2,.6]});
+      navLinks.map(l=>document.querySelector(l.hash)).filter(Boolean).forEach(s=>observer.observe(s));
+
+      const modal=document.getElementById('image-modal');
+      document.querySelectorAll('.image-open').forEach(b=>b.addEventListener('click',()=>{document.getElementById('modal-image').src=b.dataset.src;document.getElementById('modal-image').alt=b.dataset.caption;document.getElementById('modal-caption').textContent=b.dataset.caption;modal.showModal();}));
+      document.getElementById('modal-close').addEventListener('click',()=>modal.close());
+      modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+      document.getElementById('copy-json').addEventListener('click',async e=>{try{await navigator.clipboard.writeText(JSON.stringify(data,null,2));e.currentTarget.textContent='Copied';setTimeout(()=>e.currentTarget.textContent='Copy JSON',1200);}catch{e.currentTarget.textContent='Select to copy';}});
+    }
+
+    document.getElementById('theme-toggle').addEventListener('click',()=>{
+      const root=document.documentElement;document.body.classList.add('theme-transition');const dark=root.classList.toggle('dark');root.style.colorScheme=dark?'dark':'light';localStorage.setItem('robot-report-theme',dark?'dark':'light');charts.forEach(c=>{const text=dark?'#a1a1aa':'#52525b',grid=dark?'#27272a':'#e4e4e7';c.options.color=text;c.options.scales.x.ticks.color=text;c.options.scales.y.ticks.color=text;c.options.scales.y.grid.color=grid;c.update();});setTimeout(()=>document.body.classList.remove('theme-transition'),220);
+    });
+    document.getElementById('theme-toggle').setAttribute('aria-pressed',String(document.documentElement.classList.contains('dark')));
+
+    fetch('./data.json').then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json();}).then(data=>{render(data);document.getElementById('loading').hidden=true;document.getElementById('content').hidden=false;}).catch(err=>{console.error(err);document.getElementById('loading').hidden=true;document.getElementById('error').hidden=false;});
+  </script>
+</body>
+</html>

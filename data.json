@@ -1,0 +1,213 @@
+{
+  "commonSetup": {
+    "mcps": [
+      {
+        "name": "mcp-searxng",
+        "url": "https://github.com/ihor-sokoliuk/mcp-searxng"
+      },
+      {
+        "name": "mcp-for-blender",
+        "url": "https://github.com/ahujasid/mcp-for-blender"
+      }
+    ],
+    "skills": []
+  },
+  "prompts": [
+    {
+      "id": 1,
+      "task": "model-and-texture",
+      "text": "Using the Blender MCP in the active scene, create the complete model with textures for a little robot. It has body and head being white rusted metal and limbs being rusted irons. It has a cartoonish antenna at the top of the head. The eyes and mouth are holes on the head. The shading should be cel shaded with proper PBR material. Attached is the concept art for the robot.",
+      "attachments": [
+        "./images/reference.jpg"
+      ]
+    },
+    {
+      "id": 2,
+      "task": "refine-textures-and-proportions",
+      "text": "Adjust the rusted patterns on the body and head to be less frequent on the face and the main body area while being more frequent on edges. Also, make the body a bit wider.",
+      "attachments": []
+    },
+    {
+      "id": 3,
+      "task": "game-optimization",
+      "text": "Reduce the number of polygon counts so that it is ready for use in games.",
+      "attachments": []
+    },
+    {
+      "id": 4,
+      "task": "rigging",
+      "text": "Add skeleton for the robot",
+      "attachments": []
+    }
+  ],
+  "runs": [
+    {
+      "id": "codex-gpt6-astra",
+      "name": "Codex with ChatGPT Plus Subscription",
+      "platform": "Codex",
+      "interactionClient": "ChatGPT Desktop App",
+      "billingMethod": "ChatGPT Plus subscription",
+      "model": "GPT-6 Astra",
+      "effort": "Medium",
+      "promptResults": [
+        {
+          "promptId": 1,
+          "durationSeconds": 280,
+          "durationDisplay": "4m 40s",
+          "approximateTokens": {
+            "input": 29000,
+            "output": 40000
+          }
+        },
+        {
+          "promptId": 2,
+          "durationSeconds": 91,
+          "durationDisplay": "1m 31s",
+          "approximateTokens": {
+            "input": 69000,
+            "output": 10000
+          }
+        },
+        {
+          "promptId": 3,
+          "durationSeconds": 150,
+          "durationDisplay": "2m 30s",
+          "approximateTokens": {
+            "input": 79000,
+            "output": 14000
+          },
+          "triangles": {
+            "before": 82636,
+            "after": 9724,
+            "reduction": 72912,
+            "reductionPercent": 88.24
+          }
+        },
+        {
+          "promptId": 4,
+          "durationSeconds": 147,
+          "durationDisplay": "2m 27s",
+          "approximateTokens": {
+            "input": 93000,
+            "output": 13000
+          }
+        }
+      ],
+      "totals": {
+        "durationSeconds": 668,
+        "durationDisplay": "11m 8s",
+        "tokenContext": {
+          "used": 106000,
+          "limit": 258000
+        },
+        "weeklyLimitUsedPercent": 6
+      },
+      "costEstimatesUsd": [
+        {
+          "method": "prorated-subscription",
+          "amount": 0.28,
+          "formula": "0.06 / 4.3 * 20",
+          "assumptions": {
+            "weeksPerMonth": 4.3,
+            "monthlySubscriptionUsd": 20
+          }
+        },
+        {
+          "method": "token-credit-equivalent",
+          "amount": 1.06,
+          "formula": "0.106 * 250 * 20 / 500",
+          "assumptions": {
+            "creditsPerMillionTokens": 250,
+            "creditsPerPurchase": 500,
+            "purchasePriceUsd": 20
+          }
+        }
+      ],
+      "notes": [
+        "Unknown small discrepancy between the previous output and the next input.",
+        "Prompt 1, Prompt 3, and Prompt 4 results were saved as different blender files.",
+        "The result matches closely to the reference image."
+      ],
+      "results": {
+        "rigImage": "./images/gpt6-rig.png",
+        "renderImage": "./images/gpt6-render.png"
+      }
+    },
+    {
+      "id": "opencode-deepseek-v4-1-flash",
+      "name": "OpenCode with OpenRouter API",
+      "platform": "OpenCode",
+      "interactionClient": "OpenChamber",
+      "billingMethod": "OpenRouter API",
+      "routing": "LiteLLM proxy",
+      "model": "Deepseek V4.1 Flash",
+      "effort": "Default",
+      "promptResults": [
+        {
+          "promptId": 1,
+          "durationSeconds": 1669,
+          "durationDisplay": "27m 49s",
+          "approximateTokens": {
+            "input": 23000,
+            "output": 86000
+          }
+        },
+        {
+          "promptId": 2,
+          "durationSeconds": 423,
+          "durationDisplay": "7m 3s",
+          "approximateTokens": {
+            "input": 109000,
+            "output": 25000
+          }
+        },
+        {
+          "promptId": 3,
+          "durationSeconds": 215,
+          "durationDisplay": "3m 35s",
+          "approximateTokens": {
+            "input": 134000,
+            "output": 11000
+          },
+          "triangles": {
+            "before": 21166,
+            "after": 5464,
+            "reduction": 15702,
+            "reductionPercent": 74.18
+          }
+        },
+        {
+          "promptId": 4,
+          "durationSeconds": 194,
+          "durationDisplay": "3m 14s",
+          "approximateTokens": {
+            "input": 145000,
+            "output": 9000
+          }
+        }
+      ],
+      "totals": {
+        "durationSeconds": 2501,
+        "durationDisplay": "41m 41s",
+        "tokenContext": {
+          "used": 154000,
+          "limit": 1040000
+        }
+      },
+      "costEstimatesUsd": [
+        {
+          "method": "reported-api-cost",
+          "amount": 0.16
+        }
+      ],
+      "notes": [
+        "Routed through a LiteLLM proxy.",
+        "The result has more differences to the reference compared to GPT-6 Astra, but the quality is still acceptable."
+      ],
+      "results": {
+        "rigImage": "./images/ds4-rig.png",
+        "renderImage": "./images/ds4-render.png"
+      }
+    }
+  ]
+}
